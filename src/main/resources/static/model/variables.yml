@@ -1,0 +1,107 @@
+components:
+
+  schemas:
+
+    # ==========================================================
+    # IDS
+    # ==========================================================
+
+    taskId:
+      type: string
+      format: uuid
+      nullable: false
+      description: UUID задачи.
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+
+    userId:
+      type: string
+      format: uuid
+      nullable: false
+      description: UUID пользователя.
+      example: "7f3e2a10-8c91-4d31-b7a2-92c4e8f12345"
+
+
+    performerId:
+      type: string
+      format: uuid
+      nullable: true
+      description: UUID исполнителя. Может быть null, если исполнитель не назначен.
+      example: "7f3e2a10-8c91-4d31-b7a2-92c4e8f12345"
+
+
+    # ==========================================================
+    # TASK FIELDS
+    # ==========================================================
+
+    taskName:
+      type: string
+      nullable: false
+      minLength: 1
+      maxLength: 255
+      pattern: '.*\S.*'
+      description: Наименование задачи.
+      example: "Implement authorization"
+
+
+    taskDescription:
+      type: string
+      nullable: true
+      description: Описание задачи.
+      example: "Implement task authorization flow."
+
+
+    taskStatus:
+      type: string
+      nullable: false
+      description: Статус задачи.
+      enum:
+        - NEW
+        - IN_PROGRESS
+        - DONE
+        - HOLD
+
+
+    createdAt:
+      type: string
+      format: date-time
+      nullable: false
+      readOnly: true
+      description: Дата и время создания задачи.
+      example: "2026-10-08T10:30:00Z"
+
+
+    # ==========================================================
+    # PAGINATION
+    # ==========================================================
+
+    pageNumber:
+      type: integer
+      format: int32
+      minimum: 0
+      description: Номер страницы, начиная с 0.
+      example: 0
+
+
+    pageSize:
+      type: integer
+      format: int32
+      minimum: 1
+      description: Количество задач на странице.
+      example: 20
+
+
+    totalElements:
+      type: integer
+      format: int64
+      minimum: 0
+      description: Общее количество задач.
+      example: 153
+
+
+    totalPages:
+      type: integer
+      format: int32
+      minimum: 0
+      description: Общее количество страниц.
+      example: 8

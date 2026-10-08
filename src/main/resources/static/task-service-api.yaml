@@ -1,0 +1,366 @@
+openapi: 3.0.0
+
+info:
+  title: Task Service API
+  description: REST API сервиса управления задачами.
+  version: 0.0.1-SNAPSHOT
+
+servers:
+  - url: http://localhost:8080
+    description: Dev server
+
+tags:
+  - name: Task
+    description: Эндпоинты работы с задачами
+
+paths:
+
+  # ============================================================
+  # TASKS: LIST + CREATE
+  # ============================================================
+
+  /api/v1/tasks:
+
+    get:
+      tags:
+        - Task
+
+      summary: Получение списка задач
+
+      description: |
+        Возвращает список задач с пагинацией.
+
+        Параметры page и size задают страницу.
+        Параметр sort задаёт сортировку и может передаваться несколько раз.
+
+        Пример одной сортировки:
+        /api/v1/tasks?page=0&size=20&sort=createdAt,desc
+
+        Пример нескольких критериев:
+        /api/v1/tasks?page=0&size=20&sort=status,asc&sort=createdAt,desc
+
+      operationId: getTasks
+
+      x-spring-paginated: true
+
+      parameters:
+
+        - in: query
+          name: page
+          required: false
+          description: |
+            Номер страницы, начиная с 0.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+
+        - in: query
+          name: size
+          required: false
+          description: |
+            Количество задач на странице.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 20
+
+        - in: query
+          name: sort
+          required: false
+          description: |
+            Критерий сортировки в формате field,direction.
+            Параметр может передаваться несколько раз.
+
+            Допустимые поля:
+            - id
+            - name
+            - status
+            - performerId
+            - createdAt
+
+            Допустимые направления:
+            - asc
+            - desc
+
+          style: form
+          explode: true
+
+          schema:
+            type: array
+            minItems: 1
+            items:
+              type: string
+              enum:
+                - id,asc
+                - id,desc
+                - name,asc
+                - name,desc
+                - status,asc
+                - status,desc
+                - performerId,asc
+                - performerId,desc
+                - createdAt,asc
+                - createdAt,desc
+
+      responses:
+
+        '200':
+          description: Список задач успешно получен.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/TaskPageResponse'
+
+        '400':
+          description: Некорректные параметры запроса.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+
+    post:
+      tags:
+        - Task
+
+      summary: Создание задачи
+
+      description: |
+        Создаёт новую задачу.
+
+        При создании:
+        - статус задачи устанавливается в NEW;
+        - исполнитель отсутствует.
+
+        После создания задачи сервис публикует событие в Kafka.
+
+      operationId: createTask
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'model/components.yml#/components/schemas/CreateTaskRequest'
+
+      responses:
+
+        '201':
+          description: Задача успешно создана.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/TaskResponse'
+
+        '400':
+          description: Некорректные данные задачи.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+
+  # ============================================================
+  # GET TASK BY ID
+  # ============================================================
+
+  /api/v1/tasks/{taskId}:
+
+    get:
+      tags:
+        - Task
+
+      summary: Получение задачи по ID
+
+      description: Получение задачи по уникальному идентификатору.
+
+      operationId: getTaskById
+
+      parameters:
+
+        - in: path
+          name: taskId
+          required: true
+          description: UUID задачи.
+          schema:
+            type: string
+            format: uuid
+
+      responses:
+
+        '200':
+          description: Задача успешно найдена.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/TaskResponse'
+
+        '400':
+          description: Некорректный UUID задачи.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '404':
+          description: Задача с указанным ID не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+
+  # ============================================================
+  # ASSIGN PERFORMER
+  # ============================================================
+
+  /api/v1/tasks/{taskId}/performer:
+
+    patch:
+      tags:
+        - Task
+
+      summary: Назначение исполнителя
+
+      description: |
+        Назначает существующего пользователя исполнителем задачи.
+
+        После успешного назначения исполнителя сервис публикует
+        событие в Kafka.
+
+      operationId: assignPerformer
+
+      parameters:
+
+        - in: path
+          name: taskId
+          required: true
+          description: UUID задачи.
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'model/components.yml#/components/schemas/AssignPerformerRequest'
+
+      responses:
+
+        '200':
+          description: Исполнитель успешно назначен.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/TaskResponse'
+
+        '400':
+          description: Некорректный запрос или некорректный UUID.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '404':
+          description: Задача или пользователь не найдены.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+
+  # ============================================================
+  # CHANGE STATUS
+  # ============================================================
+
+  /api/v1/tasks/{taskId}/status:
+
+    patch:
+      tags:
+        - Task
+
+      summary: Изменение статуса задачи
+
+      description: Изменяет статус существующей задачи.
+
+      operationId: changeTaskStatus
+
+      parameters:
+
+        - in: path
+          name: taskId
+          required: true
+          description: UUID задачи.
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: 'model/components.yml#/components/schemas/ChangeStatusRequest'
+
+      responses:
+
+        '200':
+          description: Статус задачи успешно изменён.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/TaskResponse'
+
+        '400':
+          description: Некорректный запрос, UUID или статус.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '404':
+          description: Задача не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'
+
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: 'model/components.yml#/components/schemas/ErrorResponse'

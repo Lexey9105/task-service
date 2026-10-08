@@ -1,3 +1,55 @@
 spring:
   application:
     name: task-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:task_service}
+    username: ${DB_USERNAME:task_user}
+    password: ${DB_PASSWORD:task_password}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        timezone:
+          default_storage: NORMALIZE_UTC
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+      acks: all
+
+      properties:
+        "[enable.idempotence]": true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  kafka:
+    topics:
+      task-events: ${KAFKA_TASK_EVENTS_TOPIC:task-events}
+
+outbox:
+  processor:
+    delay: 5000
+    batch-size: 100
+    send-timeout-sec: 10
+    max-retries: 5

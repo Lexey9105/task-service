@@ -1,0 +1,155 @@
+components:
+
+  schemas:
+
+    # ==========================================================
+    # REQUESTS
+    # ==========================================================
+
+    CreateTaskRequest:
+
+      type: object
+
+      description: Данные для создания задачи.
+
+      required:
+        - name
+
+      properties:
+
+        name:
+          $ref: 'variables.yml#/components/schemas/taskName'
+
+        description:
+          $ref: 'variables.yml#/components/schemas/taskDescription'
+
+
+    AssignPerformerRequest:
+
+      type: object
+
+      description: Данные для назначения исполнителя.
+
+      required:
+        - performerId
+
+      properties:
+
+        performerId:
+          $ref: 'variables.yml#/components/schemas/userId'
+
+
+    ChangeStatusRequest:
+
+      type: object
+
+      description: Данные для изменения статуса задачи.
+
+      required:
+        - status
+
+      properties:
+
+        status:
+          $ref: 'variables.yml#/components/schemas/taskStatus'
+
+
+    # ==========================================================
+    # RESPONSES
+    # ==========================================================
+
+    TaskResponse:
+
+      type: object
+
+      description: Представление задачи.
+
+      required:
+        - id
+        - name
+        - performerId
+        - description
+        - status
+        - createdAt
+
+      properties:
+
+        id:
+          $ref: 'variables.yml#/components/schemas/taskId'
+
+        name:
+          $ref: 'variables.yml#/components/schemas/taskName'
+
+        performerId:
+          $ref: 'variables.yml#/components/schemas/performerId'
+
+        description:
+          $ref: 'variables.yml#/components/schemas/taskDescription'
+
+        status:
+          $ref: 'variables.yml#/components/schemas/taskStatus'
+
+        createdAt:
+          $ref: 'variables.yml#/components/schemas/createdAt'
+
+
+    TaskPageResponse:
+
+      type: object
+
+      description: Страница с задачами и метаданными пагинации.
+
+      required:
+        - items
+        - page
+        - size
+        - totalElements
+        - totalPages
+
+      properties:
+
+        items:
+          type: array
+          description: Задачи текущей страницы.
+          items:
+            $ref: '#/components/schemas/TaskResponse'
+
+        page:
+          $ref: 'variables.yml#/components/schemas/pageNumber'
+
+        size:
+          $ref: 'variables.yml#/components/schemas/pageSize'
+
+        totalElements:
+          $ref: 'variables.yml#/components/schemas/totalElements'
+
+        totalPages:
+          $ref: 'variables.yml#/components/schemas/totalPages'
+
+
+    # ==========================================================
+    # ERRORS
+    # ==========================================================
+
+    ErrorResponse:
+
+      type: object
+
+      description: Ответ с информацией об ошибке.
+
+      required:
+        - status
+        - message
+
+      properties:
+
+        status:
+          type: integer
+          format: int32
+          description: HTTP-код ошибки.
+          example: 400
+
+        message:
+          type: string
+          description: Описание ошибки.
+          example: Некорректные параметры запроса.
